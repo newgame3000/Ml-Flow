@@ -21,7 +21,7 @@ jobs:
     - name: Run MLflow server and test
       run: |
         mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000 &
-        sleep 5 
+        sleep 30
         
         python main.py
         
