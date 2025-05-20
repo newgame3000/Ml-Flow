@@ -1,0 +1,35 @@
+name: MLflow Model Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        pip install mlflow scikit-learn
+        sudo apt-get install -y sqlite3
+    
+    - name: Run MLflow server and test
+      run: |
+        mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000 &
+        sleep 5 
+        
+        python main.py
+        
+        python -c "
+        import mlflow
+        mlflow.set_tracking_uri('sqlite:///mlflow.db')
+        runs = mlflow.search_runs()
+        last_accuracy = runs.iloc[0]['metrics.accuracy']
+        print(f'Last run accuracy: {last_accuracy:.2f}')
+        assert last_accuracy > 0.9, 'Accuracy ниже 0.9'
+        "
