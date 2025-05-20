@@ -21,15 +21,14 @@ jobs:
     - name: Run MLflow server and test
       run: |
         mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000 &
-        sleep 30
+        sleep 15
         
         python main.py
         
-        python -c "
-        import mlflow
-        mlflow.set_tracking_uri('sqlite:///mlflow.db')
-        runs = mlflow.search_runs()
-        last_accuracy = runs.iloc[0]['metrics.accuracy']
-        print(f'Last run accuracy: {last_accuracy:.2f}')
-        assert last_accuracy > 0.9, 'Accuracy ниже 0.9'
-        "
+        ACCURACY=$(sqlite3 mlflow.db "SELECT value FROM metrics WHERE key = 'accuracy' ORDER BY timestamp DESC LIMIT 1;")
+        echo "Last accuracy: $ACCURACY"
+    
+        if (( $(echo "$ACCURACY < 0.9" | bc -l) )); then
+          echo "Error: Accuracy $ACCURACY is below 0.9"
+          exit 1
+        fi
